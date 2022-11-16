@@ -1,0 +1,81 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: sigc-redis
+  namespace: kypr
+  labels:
+    app: sigc-redis
+spec:
+  replicas: 1
+  serviceName: "sigc-redis"
+  selector:
+    matchLabels:
+      app: sigc-redis
+  template:
+    metadata:
+      labels:
+        app: sigc-redis
+        sidecar.istio.io/inject: "false"
+    spec:
+      containers:
+      - name: redis
+        image: redis:6
+        command: ["redis-server"]
+        args: ["/config/redis.conf"]
+        securityContext:
+          runAsUser: 0
+        resources:
+          requests:
+            cpu: 500m
+            memory: 500Mi
+          limits:
+            cpu: 2000m
+            memory: 4Gi
+        ports:
+          - containerPort: 6379
+            name: tcp-redis
+        volumeMounts:
+        - name: redis
+          mountPath: /data
+        - name: config
+          mountPath: /config
+      volumes:
+      - name: redis
+        persistentVolumeClaim:
+          claimName: sigc-redis
+      - name: config
+        configMap:
+          name: sigc-redis
+          items:
+          - key: redis.conf
+            path: redis.conf
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sigc-redis
+  namespace: kypr
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sigc-redis
+  namespace: kypr
+  labels:
+    app: sigc-redis
+spec:
+  type: ClusterIP
+  selector:
+    app: sigc-redis
+  ports:
+    - protocol: TCP
+      port: 6379
+      name: tcp-redis
+      targetPort: 6379

@@ -1,0 +1,5 @@
+.env
+.env-remote
+.DS_Store
+*.swp
+bin

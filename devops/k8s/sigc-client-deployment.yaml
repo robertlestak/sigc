@@ -1,0 +1,48 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sigc-client
+  namespace: kypr
+  labels:
+    app: sigc
+    component: client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sigc
+      component: client
+  template:
+    metadata:
+      labels:
+        app: sigc
+        component: client
+    spec:
+      containers:
+      - name: sigc
+        image: registry.kypr.sh/sigc:1
+        args:
+        - "server"
+        envFrom:
+        - secretRef:
+            name: sigc
+        ports:
+          - containerPort: 8080
+            name: http
+            protocol: TCP
+        livenessProbe:
+          httpGet:
+            port: 8080
+            path: /health
+        readinessProbe:
+          httpGet:
+            port: 8080
+            path: /health
+        resources:
+          requests:
+            cpu: 1000m
+            memory: 2Gi
+          limits:
+            cpu: 2000m
+            memory: 2Gi
